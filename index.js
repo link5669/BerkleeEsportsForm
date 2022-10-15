@@ -12,6 +12,7 @@ const {authenticate} = require('@google-cloud/local-auth');
 const {google} = require('googleapis');
 index = 235
 var timeout = "60000"
+var silent = false
 
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
 const TOKEN_PATH = path.join(process.cwd(), 'token.json');
@@ -19,6 +20,15 @@ const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials.json');
 
 client.on('message', msg => {
   initmsg = msg
+  if (msg.content.includes("!mingus help")) {
+    initmsg.channel.send("Welcome to MingusBot! \n *add ! to the start of every command!*\n *build database* should be run when MingusBot is first configured, this command indexes every user's first entry in the Google form into a local database for fewer API calls\n    NOTE: set 'silent=false' for verbose output for database initialization, or set 'silent=true' for fewer messages")
+  }
+  if (msg.content.includes("silent=true")) {
+    silent = true
+  }
+  if (msg.content.includes("silent=false")) {
+    silent = true
+  }
   if (msg.content.includes("!start")) {
     console.log("asd")
     authorize().then(getData).catch(console.error);
@@ -133,39 +143,15 @@ async function getData(auth) {
       fname = row[2]
       lname = row[3]
       id = row[7]
-      console.log("setting " + id)
       database.set(id, new User(fname, lname, row[4], id, row[5]))
-      console.log(database.get(id))
-      console.log(database.get(id).getEmail())
     }
-    initmsg.channel.send(fname + " " + lname + " registered on " + `${row[0]}`)
+    if (silent) {
+      initmsg.channel.send(fname + " " + lname + " registered on " + `${row[0]}`)
+    }
     console.log(`${row[0]}`);
     index += 1
     setTimeout(() => {
       authorize().then(getData).catch(console.error);
     }, timeout)
   });
-}
-
-async function getValues(spreadsheetId, range) {
-  const {GoogleAuth} = require('google-auth-library');
-  const {google} = require('googleapis');
-
-  const auth = new GoogleAuth({
-    scopes: 'https://www.googleapis.com/auth/spreadsheets',
-  });
-
-  const service = google.sheets({version: 'v4', auth});
-  try {
-    const result = await service.spreadsheets.values.get({
-      spreadsheetId,
-      range,
-    });
-    const numRows = result.data.values ? result.data.values.length : 0;
-    console.log(`${numRows} rows retrieved.`);  
-    return result;
-  } catch (err) {
-    // TODO (developer) - Handle exception
-    throw err;
-  }
 }
