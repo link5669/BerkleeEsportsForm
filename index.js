@@ -1,21 +1,32 @@
 const Discord = require('discord.js');
-const client = new Discord.Client();
+const client = new Discord.Client({intents: ["GUILDS", "GUILD_MESSAGES"]});
+client.login('MTAzMDg3MDU3NDYwNTU1MzczNQ.GAuo5m.ywZYD4zrLpSVSYL-GBmk6tzfnndYD3hEYni-Fw');
+Discord.Intents.message_content = true
+let initmsg
 
 const fs = require('fs').promises;
 const path = require('path');
 const process = require('process');
 const {authenticate} = require('@google-cloud/local-auth');
 const {google} = require('googleapis');
-index = 241
+index = 243
 
-// If modifying these scopes, delete token.json.
+
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
-// The file token.json stores the user's access and refresh tokens, and is
-// created automatically when the authorization flow completes for the first
-// time.
 const TOKEN_PATH = path.join(process.cwd(), 'token.json');
 const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials.json');
 
+client.on('message', msg => {
+  if (msg.content.includes("!start")) {
+    console.log("asd")
+    initmsg = msg
+    authorize().then(getData).catch(console.error);
+  }
+});
+
+buildDatabase() {
+
+}
 /**
  * Reads previously authorized credentials from the save file.
  *
@@ -69,16 +80,13 @@ async function authorize() {
   return client;
 }
 
-client.on('message', msg => {
-  msg.reply('test')
-});
+
 /**
  * Prints the names and majors of students in a sample spreadsheet:
  * @see https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
  * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
  */
 async function getData(auth) {
-  
   const sheets = google.sheets({version: 'v4', auth});
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: '1lXznA2IQjjVTFfS1Px-Z5_Z_vRHKPXsaa8JhEZz-3U8',
@@ -87,19 +95,31 @@ async function getData(auth) {
   const rows = res.data.values;
   if (!rows || rows.length === 0) {
     console.log('No new data found.');
-    client.channels.get('958549367416045591d').send('No new data found');
+    initmsg.channel.send('No new data found')
+    // client.channels.get('958549367416045591d').send('No new data found');
     // message.guild.channels.cache.get('958549367416045591d').send("No new data found")
     setTimeout(() => {
       authorize().then(getData).catch(console.error);
     }, "60000")
+    return;
   }
   rows.forEach((row) => {
+    initmsg.channel.send('Found data!')
+    var fname
+    var lname
+    if (row[1] == "Yes") {
+      fname = row[12]
+      lname = row[13]
+    } else {
+      fname = row[2]
+      lname = row[3]
+    }
+    initmsg.channel.send(fname + " " + lname + " registered on " + `${row[0]}`)
     console.log(`${row[0]}`);
     index += 1
     setTimeout(() => {
       authorize().then(getData).catch(console.error);
     }, "60000")
-    
   });
 }
 function doSetTimeout() {
@@ -133,15 +153,3 @@ async function getValues(spreadsheetId, range) {
     throw err;
   }
 }
-authorize().then(getData).catch(console.error);
-
-// getValues("1lXznA2IQjjVTFfS1Px-Z5_Z_vRHKPXsaa8JhEZz-3U8", "141:141")
-// authorize().then(getData).catch(console.error);
-// auth = authorize().catch(console.error);
-// getData(auth)
-// while (true) {
-//   doSetTimeout(auth);
-// }
-
-
-client.login('MTAzMDg3MDU3NDYwNTU1MzczNQ.GzWZn1.7AVTtxdN51cb7dC53f7Q5UzmarIBcj4oDB46Pg');
