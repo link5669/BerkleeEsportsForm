@@ -1,37 +1,72 @@
 const Discord = require('discord.js');
 const client = new Discord.Client({intents: ["GUILDS", "GUILD_MESSAGES"]});
-client.login('MTAzMDg3MDU3NDYwNTU1MzczNQ.GAuo5m.ywZYD4zrLpSVSYL-GBmk6tzfnndYD3hEYni-Fw');
+client.login('TOKEN');
 Discord.Intents.message_content = true
 let initmsg
+var database = new Map()
 
 const fs = require('fs').promises;
 const path = require('path');
 const process = require('process');
 const {authenticate} = require('@google-cloud/local-auth');
 const {google} = require('googleapis');
-index = 243
-
+index = 235
+var timeout = "60000"
 
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
 const TOKEN_PATH = path.join(process.cwd(), 'token.json');
 const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials.json');
 
 client.on('message', msg => {
+  initmsg = msg
   if (msg.content.includes("!start")) {
     console.log("asd")
-    initmsg = msg
     authorize().then(getData).catch(console.error);
+  }
+  if (msg.content.includes("!build database")) {
+    timeout = "1000"
+    buildDatabase()
+  }
+  if (msg.content.includes("!get email")) {
+    console.log(msg.content.length)
+    if (msg.content.length == 20) {
+      var id = msg.content.substring(11)
+      initmsg.channel.send(database.get(id).getEmail())
+    } else if (msg.content.length == 18) {
+      var id = msg.content.substring(11)
+      initmsg.channel.send(database.get(id).getEmail())
+    }
+  }
+  if (msg.content.includes("!get id")) {
+    initmsg.channel.send("POSSIBLE MATCHES:")
+    database.forEach (function(value, key) {
+      if (value.fname.toLowerCase() == msg.content.substring(8)) {
+        initmsg.channel.send(value.fname + " " + value.lname + ": " + value.id)
+      } else if (value.lname.toLowerCase() == msg.content.substring(8)) {
+        initmsg.channel.send(value.fname + " " + value.lname + ": " + value.id)
+      }
+    })
   }
 });
 
-buildDatabase() {
-
+function buildDatabase() {
+    index = 241
+    authorize().then(getData).catch(console.error);
 }
-/**
- * Reads previously authorized credentials from the save file.
- *
- * @return {Promise<OAuth2Client|null>}
- */
+
+class User {
+  constructor (fname, lname, email, id, discord) {
+    this.fname = fname
+    this.lname = lname
+    this.email = email
+    this.id = id
+    this.discord = discord
+  }
+  getEmail() {
+    return this.email
+  }
+}
+
 async function loadSavedCredentialsIfExist() {
   try {
     const content = await fs.readFile(TOKEN_PATH);
@@ -42,12 +77,6 @@ async function loadSavedCredentialsIfExist() {
   }
 }
 
-/**
- * Serializes credentials to a file comptible with GoogleAUth.fromJSON.
- *
- * @param {OAuth2Client} client
- * @return {Promise<void>}
- */
 async function saveCredentials(client) {
   const content = await fs.readFile(CREDENTIALS_PATH);
   const keys = JSON.parse(content);
@@ -61,10 +90,6 @@ async function saveCredentials(client) {
   await fs.writeFile(TOKEN_PATH, payload);
 }
 
-/**
- * Load or request or authorization to call APIs.
- *
- */
 async function authorize() {
   let client = await loadSavedCredentialsIfExist();
   if (client) {
@@ -80,12 +105,6 @@ async function authorize() {
   return client;
 }
 
-
-/**
- * Prints the names and majors of students in a sample spreadsheet:
- * @see https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
- * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
- */
 async function getData(auth) {
   const sheets = google.sheets({version: 'v4', auth});
   const res = await sheets.spreadsheets.values.get({
@@ -94,13 +113,12 @@ async function getData(auth) {
   });
   const rows = res.data.values;
   if (!rows || rows.length === 0) {
-    console.log('No new data found.');
-    initmsg.channel.send('No new data found')
-    // client.channels.get('958549367416045591d').send('No new data found');
-    // message.guild.channels.cache.get('958549367416045591d').send("No new data found")
+    // console.log('No new data found.');
+    timeout = "60000"
+    // initmsg.channel.send('No new data found')
     setTimeout(() => {
       authorize().then(getData).catch(console.error);
-    }, "60000")
+    }, timeout)
     return;
   }
   rows.forEach((row) => {
@@ -110,27 +128,25 @@ async function getData(auth) {
     if (row[1] == "Yes") {
       fname = row[12]
       lname = row[13]
+      id = row[14]
     } else {
       fname = row[2]
       lname = row[3]
+      id = row[7]
+      console.log("setting " + id)
+      database.set(id, new User(fname, lname, row[4], id, row[5]))
+      console.log(database.get(id))
+      console.log(database.get(id).getEmail())
     }
     initmsg.channel.send(fname + " " + lname + " registered on " + `${row[0]}`)
     console.log(`${row[0]}`);
     index += 1
     setTimeout(() => {
       authorize().then(getData).catch(console.error);
-    }, "60000")
+    }, timeout)
   });
 }
-function doSetTimeout() {
-  // console.log("2")
-  setTimeout(
-      function() {
-        // console.log("3")
-        authorize().then(getData).catch(console.error);
-        //  getData(auth)
-        }, 5000);
-  }
+
 async function getValues(spreadsheetId, range) {
   const {GoogleAuth} = require('google-auth-library');
   const {google} = require('googleapis');
