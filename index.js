@@ -1,7 +1,15 @@
 const Discord = require('discord.js');
-const client = new Discord.Client({intents: ["GUILDS", "GUILD_MESSAGES"]});
+const EmbedBuilder = require('discord.js');
+const { Client, GatewayIntentBits } = require('discord.js');
+const client = new Client({
+	intents: [
+		GatewayIntentBits.Guilds,
+		GatewayIntentBits.GuildMessages,
+		GatewayIntentBits.MessageContent,
+		GatewayIntentBits.GuildMembers,
+	],
+});
 client.login('TOKEN');
-Discord.Intents.message_content = true
 let initmsg
 var database = new Map()
 
@@ -19,15 +27,16 @@ const TOKEN_PATH = path.join(process.cwd(), 'token.json');
 const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials.json');
 
 client.on('message', msg => {
+  console.log("asd")
   initmsg = msg
   if (msg.content.includes("!mingus help")) {
-    initmsg.channel.send("Welcome to MingusBot! \n *add ! to the start of every command!*\n *build database* should be run when MingusBot is first configured, this command indexes every user's first entry in the Google form into a local database for fewer API calls\n    NOTE: set 'silent=false' for verbose output for database initialization, or set 'silent=true' for fewer messages")
+    initmsg.channel.send("Welcome to MingusBot! \n\n\n *add ! to the start of every command!*\n\n **build database** should be run when MingusBot is first configured, this command indexes every user's first entry in the Google form into a local database for fewer API calls\n    NOTE: set 'silent=false' for verbose output for database initialization, or set 'silent=true' for fewer messages\n\n **get email** *studentID* gets the student's email\n\n **get id** *student first name or last name* gets all possible results for a student's id\n    NOTE: get id is case insensitive!")
   }
   if (msg.content.includes("silent=true")) {
     silent = true
   }
   if (msg.content.includes("silent=false")) {
-    silent = true
+    silent = false
   }
   if (msg.content.includes("!start")) {
     console.log("asd")
@@ -132,7 +141,7 @@ async function getData(auth) {
     return;
   }
   rows.forEach((row) => {
-    initmsg.channel.send('Found data!')
+    // initmsg.channel.send('Found data!')
     var fname
     var lname
     if (row[1] == "Yes") {
@@ -146,6 +155,25 @@ async function getData(auth) {
       database.set(id, new User(fname, lname, row[4], id, row[5]))
     }
     if (silent) {
+      const exampleEmbed = new EmbedBuilder()
+	.setColor(0x0099FF)
+	.setTitle(row[0] + " " + fname + " " + lname + " has registered for the club!")
+	// .setURL('https://discord.js.org/')
+	// .setAuthor({ name: 'Some name', iconURL: 'https://i.imgur.com/AfFp7pu.png', url: 'https://discord.js.org' })
+	.setDescription("> Email: " + row[4] + "\n> Discord: " + row[5])
+	// .setThumbnail('https://i.imgur.com/AfFp7pu.png')
+	.addFields(
+		{ name: 'Regular field title', value: 'Some value here' },
+		{ name: '\u200B', value: '\u200B' },
+		{ name: 'Inline field title', value: 'Some value here', inline: true },
+		{ name: 'Inline field title', value: 'Some value here', inline: true },
+	)
+	.addFields({ name: 'Inline field title', value: 'Some value here', inline: true })
+	.setImage('https://i.imgur.com/AfFp7pu.png')
+	.setTimestamp()
+	.setFooter({ text: 'Some footer text here', iconURL: 'https://i.imgur.com/AfFp7pu.png' });
+
+channel.send({ embeds: [exampleEmbed] });
       initmsg.channel.send(fname + " " + lname + " registered on " + `${row[0]}`)
     }
     console.log(`${row[0]}`);
