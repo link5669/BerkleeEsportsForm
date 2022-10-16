@@ -1,7 +1,7 @@
 const Discord = require('discord.js');
 const EmbedBuilder = require('discord.js');
 const { Client, GatewayIntentBits } = require('discord.js');
-const client = new Client({
+const client = new Discord.Client({
 	intents: [
 		GatewayIntentBits.Guilds,
 		GatewayIntentBits.GuildMessages,
@@ -9,7 +9,7 @@ const client = new Client({
 		GatewayIntentBits.GuildMembers,
 	],
 });
-client.login('TOKEN');
+client.login('MTAzMDg3MDU3NDYwNTU1MzczNQ.GlvakT.8uVtKuie6hFxzAQezfYklv7ZBev7j5vqQA3QDk');
 let initmsg
 var database = new Map()
 
