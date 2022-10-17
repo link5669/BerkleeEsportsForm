@@ -1,7 +1,5 @@
 const { Discord, EmbedBuilder, Client, GatewayIntentBits, Partials } = require('discord.js');
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.DirectMessages ], partials: [Partials.Channel] });
-// const client = new Client({ intents: [Intents.Flags.GUILDS,  Intents.Flags.GUILD_MESSAGES, Intents.Flags.DIRECT_MESSAGES], partials: ['CHANNEL'] });
-// const client = new Discord.Client({ intents: [Discord.GatewayIntentBits.Guilds, Discord.GatewayIntentBits.GuildMessages, Discord.GatewayIntentBits.DirectMessages] });
 
 let initmsg
 var database = new Map()
@@ -18,8 +16,6 @@ var silent = false
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
 const TOKEN_PATH = path.join(process.cwd(), 'token.json');
 const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials.json');
-// console.log(client)
-// authorize().then(getData).catch(console.error);
 client.once('ready', () => {
   console.log('Ready!');
 });
@@ -68,17 +64,18 @@ client.on('messageCreate', msg => {
 });
 
 function buildDatabase() {
-    index = 241
+    index = 2
     authorize().then(getData).catch(console.error);
 }
 
 class User {
-  constructor (fname, lname, email, id, discord) {
+  constructor (fname, lname, email, id, discord, org) {
     this.fname = fname
     this.lname = lname
     this.email = email
     this.id = id
     this.discord = discord
+    this.org = org
   }
   getEmail() {
     return this.email
@@ -131,9 +128,7 @@ async function getData(auth) {
   });
   const rows = res.data.values;
   if (!rows || rows.length === 0) {
-    // console.log('No new data found.');
     timeout = "60000"
-    // initmsg.channel.send('No new data found')
     setTimeout(() => {
       authorize().then(getData).catch(console.error);
     }, timeout)
@@ -147,34 +142,65 @@ async function getData(auth) {
       fname = row[12]
       lname = row[13]
       id = row[14]
+      if (!silent) {
+        if (database.get(row[14]) == null) {
+          var orgResponse
+          if (row[14].toString().length == 7) {
+            orgResponse = "ID MATCHES BERKLEE COLLEGE FORMAT"
+          } else if (row[14].toString().length == 9) {
+            orgResponse = "ID MATCHES BOCO FORMAT"
+          } else {
+            orgResponse = "ID DOES NOT MATCH EXISTING FORMATS"
+          }
+          const exampleEmbed = new EmbedBuilder()
+          .setColor(0x0099FF)
+          .setTitle(row[0] + " " + fname + " " + lname + " has registered for the club!\nTHIS USER INDICATED THAT THEY HAVE REGISTERED BEFORE BUT THEIR DATA IS NOT IN THE DATABASE")
+          .setDescription(`> Email:  ${row[15]}\n> Discord: NOT AVAILABLE\n> School/Org: ${orgResponse}\n> Berklee ID: ${row[14]}`)
+          .setTimestamp()
+          initmsg.channel.send({ embeds: [exampleEmbed] });
+        } else {
+          const exampleEmbed = new EmbedBuilder()
+            .setColor(0x0099FF)
+            .setTitle(row[0] + " " + fname + " " + lname + " has registered for the club!")
+            .setDescription(`> Email:  ${row[15]}\n> Discord: ${database.get(row[14]).discord}\n> School/Org: ${database.get(row[14]).org}\n> School ID: ${row[14]}`)
+            .setTimestamp()
+            initmsg.channel.send({ embeds: [exampleEmbed] });
+          if (row[15] != database.get(row[14]).email) {
+            initmsg.channel.send(`Data mismatch for email, user entered ${row[15]}, database contains ${database.get(row[14]).email}`)
+          }
+          if (fname.toLowerCase != database.get(row[14]).fname.toLowerCase) {
+            initmsg.channel.send(`Data mismatch for first name, user entered ${fname}, database contains ${database.get(row[14]).fname}`)
+          }
+          if (lname.toLowerCase != database.get(row[14]).fname.toLowerCase) {
+            initmsg.channel.send(`Data mismatch for last name, user entered ${lname}, database contains ${database.get(row[14]).lname}`)
+          }
+        }
+      }
     } else {
       fname = row[2]
       lname = row[3]
       id = row[7]
-      database.set(id, new User(fname, lname, row[4], id, row[5]))
+      database.set(id, new User(fname, lname, row[4], id, row[5], row[6]))
+      if (!silent) {
+        const exampleEmbed = new EmbedBuilder()
+          .setColor(0x0099FF)
+          .setTitle(row[0] + " " + fname + " " + lname + " has registered for the club!")
+          .setDescription(`> Email:  ${row[4]}\n> Discord: ${row[5]}\n> School/Org: ${row[6]}\n> Berklee ID: ${row[7]}`)
+          .setTimestamp()
+          initmsg.channel.send({ embeds: [exampleEmbed] });
+      }
+      if (row[10].toLowerCase == "yes") {
+        if (!silent) {
+          const exampleEmbed = new EmbedBuilder()
+            .setColor(0x0099FF)
+            .setTitle(row[0] + " " + fname + " " + lname + ` has checked in for ${row[16]}!`)
+            .setDescription(`> Email:  ${row[4]}\n> Discord: ${row[5]}`)
+            .setTimestamp()
+            initmsg.channel.send({ embeds: [exampleEmbed] });
+        }
+      }
     }
-    if (!silent) {
-      const exampleEmbed = new EmbedBuilder()
-        .setColor(0x0099FF)
-        .setTitle(row[0] + " " + fname + " " + lname + " has registered for the club!")
-        // .setURL('https://discord.js.org/')
-        // .setAuthor({ name: 'Some name', iconURL: 'https://i.imgur.com/AfFp7pu.png', url: 'https://discord.js.org' })
-        .setDescription("> Email: " + row[4] + "\n> Discord: " + row[5])
-        // .setThumbnail('https://i.imgur.com/AfFp7pu.png')
-        .addFields(
-          { name: 'Regular field title', value: 'Some value here' },
-          { name: '\u200B', value: '\u200B' },
-          { name: 'Inline field title', value: 'Some value here', inline: true },
-          { name: 'Inline field title', value: 'Some value here', inline: true },
-        )
-        .addFields({ name: 'Inline field title', value: 'Some value here', inline: true })
-        // .setImage('https://i.imgur.com/AfFp7pu.png')
-        .setTimestamp()
-        // .setFooter({ text: 'Some footer text here', iconURL: 'https://i.imgur.com/AfFp7pu.png' });
-
-        initmsg.channel.send({ embeds: [exampleEmbed] });
-      // initmsg.channel.send(fname + " " + lname + " registered on " + `${row[0]}`)
-    }
+    
     console.log(`${row[0]}`);
     index += 1
     setTimeout(() => {
@@ -183,4 +209,4 @@ async function getData(auth) {
   });
 }
 
-client.login('MTAzMDg3MDU3NDYwNTU1MzczNQ.Gih0be.jXyRRHOBvUtBTkDdYOpl4XhIGMpzTIJi0oBUYg');
+client.login('TOKEN');
