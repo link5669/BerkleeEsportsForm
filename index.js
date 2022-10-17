@@ -1,15 +1,8 @@
-const Discord = require('discord.js');
-const EmbedBuilder = require('discord.js');
-const { Client, GatewayIntentBits } = require('discord.js');
-const client = new Discord.Client({
-	intents: [
-		GatewayIntentBits.Guilds,
-		GatewayIntentBits.GuildMessages,
-		GatewayIntentBits.MessageContent,
-		GatewayIntentBits.GuildMembers,
-	],
-});
-client.login('MTAzMDg3MDU3NDYwNTU1MzczNQ.GlvakT.8uVtKuie6hFxzAQezfYklv7ZBev7j5vqQA3QDk');
+const { Discord, EmbedBuilder, Client, GatewayIntentBits, Partials } = require('discord.js');
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.DirectMessages ], partials: [Partials.Channel] });
+// const client = new Client({ intents: [Intents.Flags.GUILDS,  Intents.Flags.GUILD_MESSAGES, Intents.Flags.DIRECT_MESSAGES], partials: ['CHANNEL'] });
+// const client = new Discord.Client({ intents: [Discord.GatewayIntentBits.Guilds, Discord.GatewayIntentBits.GuildMessages, Discord.GatewayIntentBits.DirectMessages] });
+
 let initmsg
 var database = new Map()
 
@@ -25,10 +18,16 @@ var silent = false
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
 const TOKEN_PATH = path.join(process.cwd(), 'token.json');
 const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials.json');
-
-client.on('message', msg => {
-  console.log("asd")
+// console.log(client)
+// authorize().then(getData).catch(console.error);
+client.once('ready', () => {
+  console.log('Ready!');
+});
+client.on('messageCreate', msg => {
   initmsg = msg
+  if (msg.content.includes("!silent status")) {
+    initmsg.channel.send(silent.toString())
+  }
   if (msg.content.includes("!mingus help")) {
     initmsg.channel.send("Welcome to MingusBot! \n\n\n *add ! to the start of every command!*\n\n **build database** should be run when MingusBot is first configured, this command indexes every user's first entry in the Google form into a local database for fewer API calls\n    NOTE: set 'silent=false' for verbose output for database initialization, or set 'silent=true' for fewer messages\n\n **get email** *studentID* gets the student's email\n\n **get id** *student first name or last name* gets all possible results for a student's id\n    NOTE: get id is case insensitive!")
   }
@@ -154,27 +153,27 @@ async function getData(auth) {
       id = row[7]
       database.set(id, new User(fname, lname, row[4], id, row[5]))
     }
-    if (silent) {
+    if (!silent) {
       const exampleEmbed = new EmbedBuilder()
-	.setColor(0x0099FF)
-	.setTitle(row[0] + " " + fname + " " + lname + " has registered for the club!")
-	// .setURL('https://discord.js.org/')
-	// .setAuthor({ name: 'Some name', iconURL: 'https://i.imgur.com/AfFp7pu.png', url: 'https://discord.js.org' })
-	.setDescription("> Email: " + row[4] + "\n> Discord: " + row[5])
-	// .setThumbnail('https://i.imgur.com/AfFp7pu.png')
-	.addFields(
-		{ name: 'Regular field title', value: 'Some value here' },
-		{ name: '\u200B', value: '\u200B' },
-		{ name: 'Inline field title', value: 'Some value here', inline: true },
-		{ name: 'Inline field title', value: 'Some value here', inline: true },
-	)
-	.addFields({ name: 'Inline field title', value: 'Some value here', inline: true })
-	.setImage('https://i.imgur.com/AfFp7pu.png')
-	.setTimestamp()
-	.setFooter({ text: 'Some footer text here', iconURL: 'https://i.imgur.com/AfFp7pu.png' });
+        .setColor(0x0099FF)
+        .setTitle(row[0] + " " + fname + " " + lname + " has registered for the club!")
+        // .setURL('https://discord.js.org/')
+        // .setAuthor({ name: 'Some name', iconURL: 'https://i.imgur.com/AfFp7pu.png', url: 'https://discord.js.org' })
+        .setDescription("> Email: " + row[4] + "\n> Discord: " + row[5])
+        // .setThumbnail('https://i.imgur.com/AfFp7pu.png')
+        .addFields(
+          { name: 'Regular field title', value: 'Some value here' },
+          { name: '\u200B', value: '\u200B' },
+          { name: 'Inline field title', value: 'Some value here', inline: true },
+          { name: 'Inline field title', value: 'Some value here', inline: true },
+        )
+        .addFields({ name: 'Inline field title', value: 'Some value here', inline: true })
+        // .setImage('https://i.imgur.com/AfFp7pu.png')
+        .setTimestamp()
+        // .setFooter({ text: 'Some footer text here', iconURL: 'https://i.imgur.com/AfFp7pu.png' });
 
-channel.send({ embeds: [exampleEmbed] });
-      initmsg.channel.send(fname + " " + lname + " registered on " + `${row[0]}`)
+        initmsg.channel.send({ embeds: [exampleEmbed] });
+      // initmsg.channel.send(fname + " " + lname + " registered on " + `${row[0]}`)
     }
     console.log(`${row[0]}`);
     index += 1
@@ -183,3 +182,5 @@ channel.send({ embeds: [exampleEmbed] });
     }, timeout)
   });
 }
+
+client.login('MTAzMDg3MDU3NDYwNTU1MzczNQ.Gih0be.jXyRRHOBvUtBTkDdYOpl4XhIGMpzTIJi0oBUYg');
