@@ -1,10 +1,12 @@
 const { Discord, EmbedBuilder, Client, GatewayIntentBits, Partials } = require('discord.js');
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.DirectMessages ], partials: [Partials.Channel] });
+var databaseFile 
 
 let initmsg
 var database = new Map()
 var stringToWrite
 var written = false
+var tempID = 1000
 
 const fs = require('fs').promises;
 const path = require('path');
@@ -23,6 +25,20 @@ client.once('ready', () => {
 });
 client.on('messageCreate', msg => {
   initmsg = msg
+  if (msg.content.includes("!read file")) {
+    if (!exists("database.json")) {
+      console.log("asd")
+      initmsg.channel.send("File not found!")
+    } else {
+    //   fetch("/database.json")
+    //   .then(function (response) {
+    //     return response.json();
+    //   })
+    //   .then(function (data) {
+    //     console.log(data);
+    //   })
+    }
+  }
   if (msg.content.includes("!silent status")) {
     initmsg.channel.send(silent.toString())
   }
@@ -196,6 +212,10 @@ async function getData(auth) {
       fname = row[2]
       lname = row[3]
       id = row[7]
+      if (id == null) {
+        id = tempID
+        tempID++
+      }
       database.set(id, new User(fname, lname, row[4], id, row[5], row[6]))
       stringToWrite += JSON.stringify({
         fname: fname,
@@ -213,15 +233,20 @@ async function getData(auth) {
           .setDescription(`> Email:  ${row[4]}\n> Discord: ${row[5]}\n> School/Org: ${row[6]}\n> Berklee ID: ${row[7]}`)
           .setTimestamp()
           initmsg.channel.send({ embeds: [exampleEmbed] });
-      }
-      if (row[10].toLowerCase == "yes") {
-        if (!silent) {
-          const exampleEmbed = new EmbedBuilder()
-            .setColor(0x0099FF)
-            .setTitle(row[0] + " " + fname + " " + lname + ` has checked in for ${row[16]}!`)
-            .setDescription(`> Email:  ${row[4]}\n> Discord: ${row[5]}`)
-            .setTimestamp()
-            initmsg.channel.send({ embeds: [exampleEmbed] });
+        if (row[10] == null) {
+            const exampleEmbed = new EmbedBuilder()
+              .setColor(0x0099FF)
+              .setTitle(row[0] + " " + fname + " " + lname + " has registered before but didn't indicate an event!")
+              .setDescription(`> Email:  ${row[4]}\n> Discord: ${row[5]}`)
+              .setTimestamp()
+              initmsg.channel.send({ embeds: [exampleEmbed] });
+        } else if (row[10].toLowerCase == "yes") {
+            const exampleEmbed = new EmbedBuilder()
+              .setColor(0x0099FF)
+              .setTitle(row[0] + " " + fname + " " + lname + ` has checked in for ${row[16]}!`)
+              .setDescription(`> Email:  ${row[4]}\n> Discord: ${row[5]}`)
+              .setTimestamp()
+              initmsg.channel.send({ embeds: [exampleEmbed] });
         }
       }
     }
@@ -234,4 +259,4 @@ async function getData(auth) {
   });
 }
 
-client.login('TOKEN');
+client.login('MTAzMDg3MDU3NDYwNTU1MzczNQ.Gzn8D_.ZcuBM3eR36cZvavxTCy9kiaE07YohLRnXqiErg');
