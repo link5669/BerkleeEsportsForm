@@ -64,7 +64,7 @@ client.on('messageCreate', msg => {
 });
 
 function buildDatabase() {
-    index = 2
+    index = 249
     authorize().then(getData).catch(console.error);
 }
 
@@ -181,6 +181,12 @@ async function getData(auth) {
       lname = row[3]
       id = row[7]
       database.set(id, new User(fname, lname, row[4], id, row[5], row[6]))
+      console.log(JSON.stringify({
+        fname: fname,
+        lname: lname,
+        email: row[4],
+        id: id,
+      }))
       if (!silent) {
         const exampleEmbed = new EmbedBuilder()
           .setColor(0x0099FF)
@@ -209,4 +215,4 @@ async function getData(auth) {
   });
 }
 
-client.login('TOKEN');
+client.login('MTAzMDg3MDU3NDYwNTU1MzczNQ.GHesdf.ZxaK-GqqlGQ7-JsBoWcuSxZBgpg0U-t8ZA3PsI');
