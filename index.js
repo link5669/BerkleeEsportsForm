@@ -3,6 +3,8 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBit
 
 let initmsg
 var database = new Map()
+var stringToWrite
+var written = false
 
 const fs = require('fs').promises;
 const path = require('path');
@@ -64,7 +66,7 @@ client.on('messageCreate', msg => {
 });
 
 function buildDatabase() {
-    index = 249
+    index = 2
     authorize().then(getData).catch(console.error);
 }
 
@@ -120,6 +122,15 @@ async function authorize() {
   return client;
 }
 
+async function exists (path) {  
+  try {
+    await fs.access(path)
+    return true
+  } catch {
+    return false
+  }
+}
+
 async function getData(auth) {
   const sheets = google.sheets({version: 'v4', auth});
   const res = await sheets.spreadsheets.values.get({
@@ -129,6 +140,10 @@ async function getData(auth) {
   const rows = res.data.values;
   if (!rows || rows.length === 0) {
     timeout = "60000"
+    if (!written) {
+      fs.writeFile("database.json", stringToWrite)
+      written = true
+    }
     setTimeout(() => {
       authorize().then(getData).catch(console.error);
     }, timeout)
@@ -176,17 +191,21 @@ async function getData(auth) {
           }
         }
       }
+      
     } else {
       fname = row[2]
       lname = row[3]
       id = row[7]
       database.set(id, new User(fname, lname, row[4], id, row[5], row[6]))
-      console.log(JSON.stringify({
+      stringToWrite += JSON.stringify({
         fname: fname,
         lname: lname,
         email: row[4],
         id: id,
-      }))
+        discord: row[5],
+        org: row[6]
+      })
+      stringToWrite += "\n"
       if (!silent) {
         const exampleEmbed = new EmbedBuilder()
           .setColor(0x0099FF)
@@ -215,4 +234,4 @@ async function getData(auth) {
   });
 }
 
-client.login('MTAzMDg3MDU3NDYwNTU1MzczNQ.GHesdf.ZxaK-GqqlGQ7-JsBoWcuSxZBgpg0U-t8ZA3PsI');
+client.login('TOKEN');
