@@ -13,6 +13,7 @@ const path = require('path');
 const process = require('process');
 const {authenticate} = require('@google-cloud/local-auth');
 const {google} = require('googleapis');
+const { send } = require('process');
 index = 235
 var timeout = "60000"
 var silent = false
@@ -27,16 +28,22 @@ client.on('messageCreate', msg => {
   initmsg = msg
   if (msg.content.includes("!read file")) {
     if (!exists("database.json")) {
-      console.log("asd")
       initmsg.channel.send("File not found!")
     } else {
-    //   fetch("/database.json")
-    //   .then(function (response) {
-    //     return response.json();
-    //   })
-    //   .then(function (data) {
-    //     console.log(data);
-    //   })
+      const readline = require('readline');
+var user_file = './database.json';
+var r = readline.createInterface({
+    input : fs.createReadStream(user_file)
+});
+r.on('line', function (text) {
+console.log(text);
+});
+    //   console.log("alksjdalksdj")
+    //   fs.readFile("database.json", (err, data) => {
+    //     console.log("aslkdj")
+    //     if (err) throw err;
+    //     console.log(data.toString());
+    // })
     }
   }
   if (msg.content.includes("!silent status")) {
@@ -147,6 +154,15 @@ async function exists (path) {
   }
 }
 
+function sendEmbed(title, description) {
+  const exampleEmbed = new EmbedBuilder()
+    .setColor(0x0099FF)
+    .setTitle(title)
+    .setDescription(description)
+    .setTimestamp()
+  initmsg.channel.send({ embeds: [exampleEmbed] });
+}
+
 async function getData(auth) {
   const sheets = google.sheets({version: 'v4', auth});
   const res = await sheets.spreadsheets.values.get({
@@ -166,7 +182,6 @@ async function getData(auth) {
     return;
   }
   rows.forEach((row) => {
-    // initmsg.channel.send('Found data!')
     var fname
     var lname
     if (row[1] == "Yes") {
@@ -183,20 +198,10 @@ async function getData(auth) {
           } else {
             orgResponse = "ID DOES NOT MATCH EXISTING FORMATS"
           }
-          const exampleEmbed = new EmbedBuilder()
-          .setColor(0x0099FF)
-          .setTitle(row[0] + " " + fname + " " + lname + " has registered for the club!\nTHIS USER INDICATED THAT THEY HAVE REGISTERED BEFORE BUT THEIR DATA IS NOT IN THE DATABASE")
-          .setDescription(`> Email:  ${row[15]}\n> Discord: NOT AVAILABLE\n> School/Org: ${orgResponse}\n> Berklee ID: ${row[14]}`)
-          .setTimestamp()
-          initmsg.channel.send({ embeds: [exampleEmbed] });
+          sendEmbed(row[0] + " " + fname + " " + lname + " has registered for the club!\nTHIS USER INDICATED THAT THEY HAVE REGISTERED BEFORE BUT DATA IS NOT IN DATABASE", `> Email:  ${row[15]}\n> Discord: NOT AVAILABLE\n> School/Org: ${orgResponse}\n> Berklee ID: ${row[14]}`)
         } else {
-          const exampleEmbed = new EmbedBuilder()
-            .setColor(0x0099FF)
-            .setTitle(row[0] + " " + fname + " " + lname + " has registered for the club!")
-            .setDescription(`> Email:  ${row[15]}\n> Discord: ${database.get(row[14]).discord}\n> School/Org: ${database.get(row[14]).org}\n> School ID: ${row[14]}`)
-            .setTimestamp()
-            initmsg.channel.send({ embeds: [exampleEmbed] });
-          if (row[15] != database.get(row[14]).email) {
+          sendEmbed(row[0] + " " + fname + " " + lname + " has registered for the club!",`> Email:  ${row[15]}\n> Discord: ${database.get(row[14]).discord}\n> School/Org: ${database.get(row[14]).org}\n> School ID: ${row[14]}`)
+          if (row[15] != database.get(row[14]).email && row[15] != "") {
             initmsg.channel.send(`Data mismatch for email, user entered ${row[15]}, database contains ${database.get(row[14]).email}`)
           }
           if (fname.toLowerCase != database.get(row[14]).fname.toLowerCase) {
@@ -227,26 +232,11 @@ async function getData(auth) {
       })
       stringToWrite += "\n"
       if (!silent) {
-        const exampleEmbed = new EmbedBuilder()
-          .setColor(0x0099FF)
-          .setTitle(row[0] + " " + fname + " " + lname + " has registered for the club!")
-          .setDescription(`> Email:  ${row[4]}\n> Discord: ${row[5]}\n> School/Org: ${row[6]}\n> Berklee ID: ${row[7]}`)
-          .setTimestamp()
-          initmsg.channel.send({ embeds: [exampleEmbed] });
+        sendEmbed(row[0] + " " + fname + " " + lname + " has registered for the club!",`> Email:  ${row[4]}\n> Discord: ${row[5]}\n> School/Org: ${row[6]}\n> Berklee ID: ${row[7]}`)
         if (row[10] == null) {
-            const exampleEmbed = new EmbedBuilder()
-              .setColor(0x0099FF)
-              .setTitle(row[0] + " " + fname + " " + lname + " has registered before but didn't indicate an event!")
-              .setDescription(`> Email:  ${row[4]}\n> Discord: ${row[5]}`)
-              .setTimestamp()
-              initmsg.channel.send({ embeds: [exampleEmbed] });
+          sendEmbed(row[0] + " " + fname + " " + lname + " has registered before but didn't indicate an event!",`> Email:  ${row[4]}\n> Discord: ${row[5]}\n> School/Org: ${row[6]}\n> Berklee ID: ${row[7]}`)
         } else if (row[10].toLowerCase == "yes") {
-            const exampleEmbed = new EmbedBuilder()
-              .setColor(0x0099FF)
-              .setTitle(row[0] + " " + fname + " " + lname + ` has checked in for ${row[16]}!`)
-              .setDescription(`> Email:  ${row[4]}\n> Discord: ${row[5]}`)
-              .setTimestamp()
-              initmsg.channel.send({ embeds: [exampleEmbed] });
+          sendEmbed(row[0] + " " + fname + " " + lname + ` has checked in for ${row[16]}!`,`> Email:  ${row[4]}\n> Discord: ${row[5]}\n> School/Org: ${row[6]}\n> Berklee ID: ${row[7]}`)
         }
       }
     }
@@ -259,4 +249,4 @@ async function getData(auth) {
   });
 }
 
-client.login('MTAzMDg3MDU3NDYwNTU1MzczNQ.Gzn8D_.ZcuBM3eR36cZvavxTCy9kiaE07YohLRnXqiErg');
+client.login('MTAzMDg3MDU3NDYwNTU1MzczNQ.G5O1Yl.jSYdm4DurVzumZUyFXx8o3vZ-s2HWeSolgXNFc');
