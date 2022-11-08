@@ -9,11 +9,13 @@ var written = false
 var tempID = 1000
 
 const fs = require('fs').promises;
+const fsFile = require('fs');
 const path = require('path');
 const process = require('process');
 const {authenticate} = require('@google-cloud/local-auth');
 const {google} = require('googleapis');
 const { send } = require('process');
+
 index = 235
 var timeout = "60000"
 var silent = false
@@ -25,26 +27,31 @@ client.once('ready', () => {
   console.log('Ready!');
 });
 client.on('messageCreate', msg => {
-  initmsg = msg
   if (msg.content.includes("!read file")) {
     if (!exists("database.json")) {
       initmsg.channel.send("File not found!")
     } else {
       const readline = require('readline');
-var user_file = './database.json';
-var r = readline.createInterface({
-    input : fs.createReadStream(user_file)
-});
-r.on('line', function (text) {
-console.log(text);
-});
-    //   console.log("alksjdalksdj")
-    //   fs.readFile("database.json", (err, data) => {
-    //     console.log("aslkdj")
-    //     if (err) throw err;
-    //     console.log(data.toString());
-    // })
+      var user_file = './database.json';
+      var text = fsFile.readFileSync("./database.json");
+      var string = text.toString('utf-8')
+      var textByLine = string.split("\n")
+      i = 0
+      while (i < (textByLine.length -1)) {
+        obj = JSON.parse(textByLine[i])
+        if (obj.fname == "undefined") {
+          continue
+        }
+        database.set(obj.id, new User(obj.fname, obj.lname, obj.email, obj.id, obj.discord, obj.org))
+        i += 1
+      }
+      initmsg.channel.send("Finished reading!")
     }
+    
+  }
+  if (msg.content.includes("!set channel")) {
+    initmsg = msg
+    initmsg.channel.send("Set channel!")
   }
   if (msg.content.includes("!silent status")) {
     initmsg.channel.send(silent.toString())
@@ -59,30 +66,22 @@ console.log(text);
     silent = false
   }
   if (msg.content.includes("!start")) {
-    console.log("asd")
     authorize().then(getData).catch(console.error);
   }
   if (msg.content.includes("!build database")) {
     timeout = "1000"
     buildDatabase()
   }
-  if (msg.content.includes("!get email")) {
-    console.log(msg.content.length)
-    if (msg.content.length == 20) {
-      var id = msg.content.substring(11)
-      initmsg.channel.send(database.get(id).getEmail())
-    } else if (msg.content.length == 18) {
-      var id = msg.content.substring(11)
-      initmsg.channel.send(database.get(id).getEmail())
-    }
-  }
-  if (msg.content.includes("!get id")) {
+  if (msg.content.includes("!get info")) {
     initmsg.channel.send("POSSIBLE MATCHES:")
     database.forEach (function(value, key) {
-      if (value.fname.toLowerCase() == msg.content.substring(8)) {
-        initmsg.channel.send(value.fname + " " + value.lname + ": " + value.id)
-      } else if (value.lname.toLowerCase() == msg.content.substring(8)) {
-        initmsg.channel.send(value.fname + " " + value.lname + ": " + value.id)
+      console.log(value.fname)
+      if (value.fname != "undefined" && value != undefined && value.fname != undefined) {
+        if (value.fname.toLowerCase().includes(msg.content.substring(10))) {
+          initmsg.channel.send(value.fname + " " + value.lname + " from " + value.org + ": " + value.id + ", " + value.email + ", " + value.discord)
+        } else if (value.lname.toLowerCase().includes(msg.content.substring(10))) {
+          initmsg.channel.send(value.fname + " " + value.lname + " from " + value.org + ": " + value.id + ", " + value.email + ", " + value.discord)
+        }
       }
     })
   }
@@ -249,4 +248,4 @@ async function getData(auth) {
   });
 }
 
-client.login('MTAzMDg3MDU3NDYwNTU1MzczNQ.G5O1Yl.jSYdm4DurVzumZUyFXx8o3vZ-s2HWeSolgXNFc');
+client.login('KEY');
