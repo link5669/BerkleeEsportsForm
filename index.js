@@ -8,6 +8,7 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBit
   GatewayIntentBits.GuildMessageTyping,
   GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.MessageContent ], partials: [Partials.Channel] });
 var databaseFile 
+var debugFlag = false
 
 class User {
   constructor (fname, lname, email, id, discord, org) {
@@ -33,6 +34,8 @@ var stringToWrite
 var written = false
 var tempID = 1000
 var sendMsgHour
+var sendMsgMin
+var sendMsgSecond
 var generalChanMsg
 var tempStudent = new User()
 
@@ -82,36 +85,8 @@ async function getNumTuples(auth) {
     console.log(numTuples)
 }
 
-const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
-const TOKEN_PATH = path.join(process.cwd(), 'token.json');
-const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials.json');
-client.once('ready', () => {
-  console.log('Ready!');
-  authorize().then(getNumTuples).catch(console.error);
-});
-client.on('messageCreate', msg => {
-  if (msg.content.includes("hi mingus :)")){
-    msg.channel.send(" <:heiswatching:1024146518749499445> ")
-  }
-  if (msg.content.includes("!update email")) {
-    if (!exists("database.json")) {
-      initmsg.channel.send("File not found!")
-    } else {
-      var emails = msg.content.substring(14)
-      var emailArr = emails.split(" ")
-      const readline = require('readline');
-      var user_file = './database.json';
-      var text = fsFile.readFileSync("./database.json");
-      var string = text.toString('utf-8')
-      string = string.replace(emailArr[0], emailArr[1])
-      fs.writeFile("database.json", string)
-    }
-  }
-  if (msg.content.includes("!read file")) {
-    if (!exists("database.json")) {
-      initmsg.channel.send("File not found!")
-    } else {
-      const readline = require('readline');
+function readFileIntoLocalDB() {
+  const readline = require('readline');
       var user_file = './database.json';
       var text = fsFile.readFileSync("./database.json");
       var string = text.toString('utf-8')
@@ -132,8 +107,42 @@ client.on('messageCreate', msg => {
       written = true
       index = numTuples
       initmsg.channel.send("Finished reading!")
+}
+
+const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
+const TOKEN_PATH = path.join(process.cwd(), 'token.json');
+const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials.json');
+client.once('ready', () => {
+  console.log('Ready!');
+  authorize().then(getNumTuples).catch(console.error);
+});
+client.on('messageCreate', msg => {
+  if (msg.content.includes("hi mingus :)")){
+    msg.channel.send(" <:heiswatching:1024146518749499445> ")
+  }
+  if (msg.content.includes("!update info")) {
+    if (!exists("database.json")) {
+      initmsg.channel.send("File not found!")
+    } else {
+      var emails = msg.content.substring(14)
+      var emailArr = emails.split(" ")
+      const readline = require('readline');
+      var user_file = './database.json';
+      var text = fsFile.readFileSync("./database.json");
+      var string = text.toString('utf-8')
+      string = string.replace(("\"" + emailArr[0] + "\""), ("\"" + emailArr[1] + "\""))
+      fs.writeFile("database.json", string)
+      initmsg.channel.send("Updated!")
+      readFileIntoLocalDB()
+      initmsg.channel.send("Quick lookup DB updated!")
     }
-    
+  }
+  if (msg.content.includes("!read file")) {
+    if (!exists("database.json")) {
+      initmsg.channel.send("File not found!")
+    } else {
+      readFileIntoLocalDB()
+    }
   }
   if (msg.content.includes("!set channel")) {
     initmsg = msg
@@ -147,7 +156,7 @@ client.on('messageCreate', msg => {
     initmsg.channel.send(silent.toString())
   }
   if (msg.content.includes("!mingus help")) {
-    initmsg.channel.send("Welcome to MingusBot! \n\n *add ! to the start of every command!*\n\n **build database** should be run when MingusBot is first configured, this command indexes every user's first entry in the Google form into a local database for fewer API calls\n    NOTE: set 'silent=false' for verbose output for database initialization, or set 'silent=true' for fewer messages\n\n **read file** reads existing database file\n\n **set channel** sets the channel Mingus sends database-related messages in\n\n **get info** *student first name or last name* gets all possible results for a student's name\n    NOTE: get info is case insensitive!\n\n **replace email** *existing email* *new email* replaces a student's email")
+    initmsg.channel.send("Welcome to MingusBot! \n\n *add ! to the start of every command!*\n\n **build database** should be run when MingusBot is first configured, this command indexes every user's first entry in the Google form into a local database for fewer API calls\n    NOTE: set 'silent=false' for verbose output for database initialization, or set 'silent=true' for fewer messages\n\n **read file** reads existing database file\n\n **set channel** sets the channel Mingus sends database-related messages in\n\n **get info** *student first name or last name* gets all possible results for a student's name\n    NOTE: get info is case insensitive!\n\n **update info** *existing info* *new info* replaces a student's info \n NOTE: please use this for emails and discord tags! This will replace all instances, so please use it responsibly! This will be updated soon for more granular control")
   }
   if (msg.content.includes("silent=true")) {
     silent = true
@@ -173,6 +182,9 @@ client.on('messageCreate', msg => {
         }
       }
     })
+  }
+  if (msg.content.includes("!debug flag true")) {
+    debugFlag = true
   }
 });
 
@@ -252,13 +264,12 @@ function sendRandMessage() {
   var date = new Date();
   var currHour = date.getHours()
   var currMin = date.getMinutes()
-  var currSecond = date.getSeconds()
-  if (currHour === 0 && currMin === 0 && currSecond === 0) {
+  console.log(currHour ,sendMsgHour , currMin , sendMsgMin)
+  if ((currHour == 0 && currMin == 0 && currSecond == 0) || debugFlag) {
     sendMsgHour = Math.floor(Math.random() * 24) + 1
     sendMsgMin = Math.floor(Math.random() * 60) + 1
-    sendMsgSecond = Math.floor(Math.random() * 60) + 1
   }
-  if (currHour === sendMsgHour && currMin === sendMsgMin && currSecond === sendMsgSecond) {
+  if ((currHour == sendMsgHour && currMin == sendMsgMin) || debugFlag) {
     var randMsgIndex = Math.floor(Math.random() * 19)
     generalChanMsg.channel.send(randomMessages[randMsgIndex])
   }
