@@ -93,6 +93,20 @@ client.on('messageCreate', msg => {
   if (msg.content.includes("hi mingus :)")){
     msg.channel.send(" <:heiswatching:1024146518749499445> ")
   }
+  if (msg.content.includes("!update email")) {
+    if (!exists("database.json")) {
+      initmsg.channel.send("File not found!")
+    } else {
+      var emails = msg.content.substring(14)
+      var emailArr = emails.split(" ")
+      const readline = require('readline');
+      var user_file = './database.json';
+      var text = fsFile.readFileSync("./database.json");
+      var string = text.toString('utf-8')
+      string = string.replace(emailArr[0], emailArr[1])
+      fs.writeFile("database.json", string)
+    }
+  }
   if (msg.content.includes("!read file")) {
     if (!exists("database.json")) {
       initmsg.channel.send("File not found!")
@@ -104,6 +118,9 @@ client.on('messageCreate', msg => {
       var textByLine = string.split("\n")
       i = 0
       while (i < (textByLine.length -1)) {
+        if (i == 0) {
+          textByLine[i] = textByLine[i].substring(9)
+        }
         obj = JSON.parse(textByLine[i])
         if (obj.fname == "undefined") {
           continue
@@ -130,7 +147,7 @@ client.on('messageCreate', msg => {
     initmsg.channel.send(silent.toString())
   }
   if (msg.content.includes("!mingus help")) {
-    initmsg.channel.send("Welcome to MingusBot! \n\n *add ! to the start of every command!*\n\n **build database** should be run when MingusBot is first configured, this command indexes every user's first entry in the Google form into a local database for fewer API calls\n    NOTE: set 'silent=false' for verbose output for database initialization, or set 'silent=true' for fewer messages\n\n **read file** reads existing database file\n\n **set channel** sets the channel Mingus sends database-related messages in\n\n **get info** *student first name or last name* gets all possible results for a student's name\n    NOTE: get info is case insensitive!")
+    initmsg.channel.send("Welcome to MingusBot! \n\n *add ! to the start of every command!*\n\n **build database** should be run when MingusBot is first configured, this command indexes every user's first entry in the Google form into a local database for fewer API calls\n    NOTE: set 'silent=false' for verbose output for database initialization, or set 'silent=true' for fewer messages\n\n **read file** reads existing database file\n\n **set channel** sets the channel Mingus sends database-related messages in\n\n **get info** *student first name or last name* gets all possible results for a student's name\n    NOTE: get info is case insensitive!\n\n **replace email** *existing email* *new email* replaces a student's email")
   }
   if (msg.content.includes("silent=true")) {
     silent = true
@@ -280,9 +297,10 @@ async function getData(auth) {
         } else {
           if (row[14] == "N/A") {
             retVal = getNonBerkleeStudentInfo(rows, fname, lname, row[15])
-            console.log(tempStudent)
-            if (retVal == "val") {
+            console.log(retVal)
+            if (tempStudent.discord != "val") {
               sendEmbed(row[0] + " " + fname + " " + lname + " has registered for the club!",`> Email:  ${row[15]}\n> Discord: ${tempStudent.discord}\n> School/Org: ${tempStudent.org}\n> School ID: ${tempStudent.id}`)
+              tempStudent.discord = "val"
             }
             if (row[15] != tempStudent.email) {
               initmsg.channel.send(`Data mismatch for email, user entered ${row[15]}, database contains ${tempStudent.email}`)
@@ -357,4 +375,4 @@ function getNonBerkleeStudentInfo(rows, fname, lname, email) {
   return "nonee"
 };
 
-client.login('key_here');
+client.login('key');
